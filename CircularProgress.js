@@ -1,95 +1,104 @@
 import React from 'react';
 import {Text, View, StyleSheet} from 'react-native';
+
 /**
-* Override styles that get passed from props
+* Function that calculates rotation of the semicircle for firstProgressLayer
+* ( when percent is less than equal to 50 ) or for the secondProgressLayer
+* when percent is greater than 50.
 **/
-propStyle = (percent, base_degrees) => {
+rotateByStyle = (percent, base_degrees) => {
   const rotateBy = base_degrees + (percent * 3.6);
   return {
     transform:[{rotateZ: `${rotateBy}deg`}]
   };
 }
 
-renderThirdLayer = (percent) => {
+renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle) => {
   if(percent > 50){
     /**
-    * Third layer circle default is 45 degrees, so by default it occupies the right half semicircle.
+    * Third layer circles default rotation is 45 degrees, so by default it occupies the right half semicircle.
     * Since first 50 percent is already taken care  by second layer circle, hence we subtract it
-    * before passing to the propStyle function
+    * before passing to the rotateByStyle function
     **/
-    return <View style={[styles.secondProgressLayer,propStyle((percent - 50), 45) ]}></View>
+    return <View style={[styles.secondProgressLayer,rotateByStyle((percent - 50), 45), commonStyles, ringColorStyle ]}></View>
   }else{
-    return <View style={styles.offsetLayer}></View>
+    return <View style={[styles.offsetLayer, commonStyles, ringBgColorStyle]}></View>
   }
 }
 
-const CircularProgress = ({percent}) => {
+const CircularProgress = ({percent, radius, ringWidth, ringColor, ringBgColor, textFontSize, textFontWeight}) => {
+  const commonStyles = {
+    width: radius * 2,
+    height: radius * 2,
+    borderRadius: radius,
+    borderWidth: ringWidth
+  };
+
+  const ringColorStyle = {
+    borderRightColor: ringColor,
+    borderTopColor: ringColor,
+  };
+
+  const ringBgColorStyle = {
+    borderRightColor: ringBgColor,
+    borderTopColor: ringBgColor,
+  };
+
+  const DEFAULT_DEG_ROTATION = -135;
   let firstProgressLayerStyle;
   if(percent > 50){
-      firstProgressLayerStyle = propStyle(50, -135);
+      firstProgressLayerStyle = rotateByStyle(50, DEFAULT_DEG_ROTATION);
   }else {
-    firstProgressLayerStyle = propStyle(percent, -135);
+    firstProgressLayerStyle = rotateByStyle(percent, DEFAULT_DEG_ROTATION);
   }
 
   return(
-    <View style={styles.container}>
-      <View style={[styles.firstProgressLayer, firstProgressLayerStyle]}></View>
-      {renderThirdLayer(percent)}
-      <Text style={styles.display}>{percent}%</Text>
+    <View style={[styles.container, commonStyles, {borderColor: ringBgColor}]}>
+      <View style={[styles.firstProgressLayer, firstProgressLayerStyle, commonStyles, ringColorStyle]}></View>
+      {renderThirdLayer(percent, commonStyles, ringColorStyle, ringBgColorStyle)}
+      <Text style={[styles.display, {fontSize: textFontSize,fontWeight: textFontWeight}]}>{percent}%</Text>
     </View>
   );
 }
 
+// default values for props
+CircularProgress.defaultProps = {
+  percent: 0,
+  radius: 100,
+  ringWidth: 20,
+  ringColor: '#3498db',
+  ringBgColor: 'grey',
+  textFontSize: 40,
+  textFontWeight: 'bold'
+}
+
+/**
+* offsetLayer has transform:[{rotateZ: '-135deg'}] since
+* the offsetLayer rotation is fixed by us.
+**/
 const styles = StyleSheet.create({
   container: {
-    width: 200,
-    height: 200,
-    borderWidth: 20,
-    borderRadius: 100,
-    borderColor: 'grey',
     justifyContent: 'center',
     alignItems: 'center'
   },
   firstProgressLayer: {
-    width: 200,
-    height: 200,
-    borderWidth: 20,
-    borderRadius: 100,
     position: 'absolute',
     borderLeftColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderRightColor: '#3498db',
-    borderTopColor: '#3498db',
-    transform:[{rotateZ: '-135deg'}]
+    borderBottomColor: 'transparent'
   },
   secondProgressLayer:{
-    width: 200,
-    height: 200,
     position: 'absolute',
-    borderWidth: 20,
-    borderRadius: 100,
     borderLeftColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderRightColor: '#3498db',
-    borderTopColor: '#3498db',
-    transform: [{rotateZ: '45deg'}]
+    borderBottomColor: 'transparent'
   },
   offsetLayer: {
-    width: 200,
-    height: 200,
     position: 'absolute',
-    borderWidth: 20,
-    borderRadius: 100,
     borderLeftColor: 'transparent',
     borderBottomColor: 'transparent',
-    borderRightColor: 'grey',
-    borderTopColor: 'grey',
     transform:[{rotateZ: '-135deg'}]
   },
   display: {
-    position: 'absolute',
-    fontSize: 40,
-    fontWeight: 'bold'
+    position: 'absolute'
   }
 });
 
