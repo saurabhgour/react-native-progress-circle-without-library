@@ -19,12 +19,13 @@ rotateByStyle = (percent, base_degrees, clockwise) => {
   };
 }
 
-renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise) => {
-  let rotation = 45;
-  let offsetLayerRotation = -135;
+renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise,
+  bgRingWidth, progressRingWidth, innerRingStyle, startDegrees) => {
+  let rotation = 45 + startDegrees;
+  let offsetLayerRotation = -135 + startDegrees;
   if(!clockwise){
     rotation += 180;
-    offsetLayerRotation = 45;
+    offsetLayerRotation += 180;
   }
   if(percent > 50){
     /**
@@ -33,18 +34,33 @@ renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle, clo
     * before passing to the rotateByStyle function
     **/
 
-    return <View style={[styles.secondProgressLayer,rotateByStyle((percent - 50), rotation, clockwise), commonStyles, ringColorStyle ]}></View>
+    return <View style={[styles.secondProgressLayer,rotateByStyle((percent - 50), rotation, clockwise),
+       commonStyles, ringColorStyle, {borderWidth: progressRingWidth} ]}></View>
   }else{
-    return <View style={[styles.offsetLayer, commonStyles, ringBgColorStyle, {transform:[{rotateZ: `${offsetLayerRotation}deg`}]}]}></View>
+    return <View style={[styles.offsetLayer, innerRingStyle, ringBgColorStyle,
+       {transform:[{rotateZ: `${offsetLayerRotation}deg`}], borderWidth: bgRingWidth}]}></View>
   }
 }
 
-const CircularProgress = ({percent, radius, ringWidth, ringColor, ringBgColor, textFontSize, textFontWeight, clockwise}) => {
+const CircularProgress = ({percent, radius, bgRingWidth, progressRingWidth, ringColor, ringBgColor,
+  textFontSize, textFontWeight, clockwise, bgColor, startDegrees}) => {
   const commonStyles = {
     width: radius * 2,
     height: radius * 2,
-    borderRadius: radius,
-    borderWidth: ringWidth
+    borderRadius: radius
+  };
+
+  /**
+  * Calculate radius for base layer and offset layer.
+  * If progressRingWidth == bgRingWidth, innerRadius is equal to radius
+  **/
+  const widthDiff = progressRingWidth - bgRingWidth;
+  const innerRadius = (radius - progressRingWidth) + bgRingWidth + widthDiff/2;
+
+  const innerRingStyle = {
+    width: innerRadius * 2,
+    height: innerRadius * 2,
+    borderRadius: innerRadius
   };
 
   const ringColorStyle = {
@@ -57,7 +73,13 @@ const CircularProgress = ({percent, radius, ringWidth, ringColor, ringBgColor, t
     borderTopColor: ringBgColor,
   };
 
-  let rotation = -135;
+  const thickOffsetRingStyle = {
+    borderRightColor: bgColor,
+    borderTopColor: bgColor,
+  };
+
+
+  let rotation = -135 + startDegrees;
   /**
   * If we want our ring progress to be displayed in anti-clockwise direction
   **/
@@ -65,16 +87,39 @@ const CircularProgress = ({percent, radius, ringWidth, ringColor, ringBgColor, t
     rotation += 180;
   }
   let firstProgressLayerStyle;
+  /* when ther ring's border widths are different and percent is less than 50, then we need an offsetLayer
+  * before the original offser layer to avoid ring color of the thick portion to be visible in the background.
+  */
+  let displayThickOffsetLayer = false;
   if(percent > 50){
       firstProgressLayerStyle = rotateByStyle(50, rotation, clockwise);
   }else {
     firstProgressLayerStyle = rotateByStyle(percent, rotation, clockwise);
+    if(progressRingWidth > bgRingWidth){
+      displayThickOffsetLayer = true;
+    }
+  }
+
+  let offsetLayerRotation = -135 + startDegrees;
+  if(!clockwise){
+    offsetLayerRotation += 180;
   }
 
   return(
-    <View style={[styles.container, commonStyles, {borderColor: ringBgColor}]}>
-      <View style={[styles.firstProgressLayer, firstProgressLayerStyle, commonStyles, ringColorStyle]}></View>
-      {renderThirdLayer(percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise)}
+    <View style={[styles.container, {width: radius * 2, height: radius * 2}]}>
+      <View style={[styles.baselayer, innerRingStyle, {borderColor: ringBgColor, borderWidth: bgRingWidth}]}>
+      </View>
+      <View style={[styles.firstProgressLayer, firstProgressLayerStyle,
+         commonStyles, ringColorStyle, {borderWidth: progressRingWidth}]}>
+      </View>
+      {
+        displayThickOffsetLayer && <View style={[styles.offsetLayer, commonStyles, thickOffsetRingStyle,
+           {transform:[{rotateZ: `${offsetLayerRotation}deg`}], borderWidth: progressRingWidth}]}></View>
+      }
+      {
+        renderThirdLayer(percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise,
+          bgRingWidth, progressRingWidth, innerRingStyle, startDegrees)
+      }
       <Text style={[styles.display, {fontSize: textFontSize,fontWeight: textFontWeight}]}>{percent}%</Text>
     </View>
   );
@@ -84,12 +129,15 @@ const CircularProgress = ({percent, radius, ringWidth, ringColor, ringBgColor, t
 CircularProgress.defaultProps = {
   percent: 0,
   radius: 100,
-  ringWidth: 20,
+  bgRingWidth: 10,
+  progressRingWidth: 20,
   ringColor: '#3498db',
   ringBgColor: 'grey',
   textFontSize: 40,
   textFontWeight: 'bold',
-  clockwise: true
+  clockwise: true,
+  bgColor: 'white',
+  startDegrees: 0
 }
 
 /**
@@ -100,6 +148,9 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  baselayer: {
+    position: 'absolute'
   },
   firstProgressLayer: {
     position: 'absolute',
@@ -114,8 +165,7 @@ const styles = StyleSheet.create({
   offsetLayer: {
     position: 'absolute',
     borderLeftColor: 'transparent',
-    borderBottomColor: 'transparent',
-    transform:[{rotateZ: '-135deg'}]
+    borderBottomColor: 'transparent'
   },
   display: {
     position: 'absolute'
