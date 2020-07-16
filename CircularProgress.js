@@ -6,7 +6,7 @@ import {Text, View, StyleSheet} from 'react-native';
 * ( when percent is less than equal to 50 ) or for the secondProgressLayer
 * when percent is greater than 50.
 **/
-rotateByStyle = (percent, base_degrees, clockwise) => {
+const rotateByStyle = (percent, base_degrees, clockwise) => {
   let rotateBy = base_degrees;
   if(clockwise){
       rotateBy = base_degrees + (percent * 3.6);
@@ -19,7 +19,7 @@ rotateByStyle = (percent, base_degrees, clockwise) => {
   };
 }
 
-renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise,
+const renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise,
   bgRingWidth, progressRingWidth, innerRingStyle, startDegrees) => {
   let rotation = 45 + startDegrees;
   let offsetLayerRotation = -135 + startDegrees;
@@ -35,19 +35,23 @@ renderThirdLayer = (percent, commonStyles, ringColorStyle, ringBgColorStyle, clo
     **/
 
     return <View style={[styles.secondProgressLayer,rotateByStyle((percent - 50), rotation, clockwise),
-       commonStyles, ringColorStyle, {borderWidth: progressRingWidth} ]}></View>
+       commonStyles, ringColorStyle ]}></View>
   }else{
     return <View style={[styles.offsetLayer, innerRingStyle, ringBgColorStyle,
-       {transform:[{rotateZ: `${offsetLayerRotation}deg`}], borderWidth: bgRingWidth}]}></View>
+       {transform:[{rotateZ: `${offsetLayerRotation}deg`}]}]}></View>
   }
 }
 
 const CircularProgress = ({percent, radius, bgRingWidth, progressRingWidth, ringColor, ringBgColor,
-  textFontSize, textFontWeight, clockwise, bgColor, startDegrees}) => {
+  textFontSize, textFontWeight,textFontColor, clockwise, bgColor, startDegrees}) => {
   const commonStyles = {
     width: radius * 2,
     height: radius * 2,
-    borderRadius: radius
+    borderRadius: radius,
+    borderTopWidth: progressRingWidth,
+    borderLeftWidth: progressRingWidth,
+    borderBottomWidth: progressRingWidth,
+    borderRightWidth: progressRingWidth,
   };
 
   /**
@@ -60,7 +64,11 @@ const CircularProgress = ({percent, radius, bgRingWidth, progressRingWidth, ring
   const innerRingStyle = {
     width: innerRadius * 2,
     height: innerRadius * 2,
-    borderRadius: innerRadius
+    borderRadius: innerRadius,
+    borderTopWidth: bgRingWidth,
+    borderLeftWidth: bgRingWidth,
+    borderBottomWidth: bgRingWidth,
+    borderRightWidth: bgRingWidth,
   };
 
   const ringColorStyle = {
@@ -110,7 +118,7 @@ const CircularProgress = ({percent, radius, bgRingWidth, progressRingWidth, ring
       <View style={[styles.baselayer, innerRingStyle, {borderColor: ringBgColor, borderWidth: bgRingWidth}]}>
       </View>
       <View style={[styles.firstProgressLayer, firstProgressLayerStyle,
-         commonStyles, ringColorStyle, {borderWidth: progressRingWidth}]}>
+         commonStyles, ringColorStyle, {borderTopWidth: progressRingWidth, borderRightWidth: progressRingWidth}]}>
       </View>
       {
         displayThickOffsetLayer && <View style={[styles.offsetLayer, commonStyles, thickOffsetRingStyle,
@@ -120,7 +128,7 @@ const CircularProgress = ({percent, radius, bgRingWidth, progressRingWidth, ring
         renderThirdLayer(percent, commonStyles, ringColorStyle, ringBgColorStyle, clockwise,
           bgRingWidth, progressRingWidth, innerRingStyle, startDegrees)
       }
-      <Text style={[styles.display, {fontSize: textFontSize,fontWeight: textFontWeight}]}>{percent}%</Text>
+      <Text style={[styles.display, {fontSize: textFontSize,fontWeight: textFontWeight,color:textFontColor}]}>{percent}%</Text>
     </View>
   );
 }
@@ -129,9 +137,9 @@ const CircularProgress = ({percent, radius, bgRingWidth, progressRingWidth, ring
 CircularProgress.defaultProps = {
   percent: 0,
   radius: 100,
-  bgRingWidth: 10,
-  progressRingWidth: 20,
-  ringColor: '#3498db',
+  bgRingWidth: 12,
+  progressRingWidth: 6,
+  ringColor: '#e7e7e7',
   ringBgColor: 'grey',
   textFontSize: 40,
   textFontWeight: 'bold',
